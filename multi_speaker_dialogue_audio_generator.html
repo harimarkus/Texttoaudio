@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Speaker Dialogue Audio Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f6ff',
+                            100: '#e0edff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased flex flex-col">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-950/70 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl shadow-lg shadow-blue-500/20">
+                    <i data-lucide="mic-2" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-white flex items-center gap-2">
+                        Dialogue Audio Studio
+                        <span class="text-xs font-normal bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">Gemini TTS</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Generate multi-speaker conversations with custom voices</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="presetBtn" onclick="loadPresetScript()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+                    Load Sample Script
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Speakers Setup & Voice Settings (4 cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Speakers Panel -->
+            <div class="bg-slate-950/50 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+                        <h2 class="font-semibold text-slate-200">Speakers & Voices</h2>
+                    </div>
+                    <button onclick="addSpeaker()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white font-medium px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-sm">
+                        <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Add Speaker
+                    </button>
+                </div>
+
+                <p class="text-xs text-slate-400">Assign names, voice personalities, and tones for each character in your dialogue.</p>
+
+                <!-- Speaker List Container -->
+                <div id="speakersContainer" class="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
+                    <!-- Dynamic Speaker Cards Inserted Here -->
+                </div>
+            </div>
+
+            <!-- Global Generation Settings -->
+            <div class="bg-slate-950/50 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <div class="flex items-center gap-2 border-b border-slate-800/80 pb-3">
+                    <i data-lucide="sliders" class="w-5 h-5 text-indigo-400"></i>
+                    <h2 class="font-semibold text-slate-200">Audio Settings</h2>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Global Pacing / Atmosphere</label>
+                        <select id="globalAtmosphere" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+                            <option value="Natural conversational tone and moderate pacing">Natural Conversation</option>
+                            <option value="Dynamic, dramatic podcast style with clear vocal dynamics">Dramatic Podcast</option>
+                            <option value="Fast-paced, energetic and playful banter">Upbeat & Energetic</option>
+                            <option value="Slow, relaxed, calm and thoughtful dialogue">Calm & Thoughtful</option>
+                        </select>
+                    </div>
+
+                    <div class="text-xs text-slate-500 bg-slate-900/60 p-3 rounded-xl border border-slate-800/50 flex items-start gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-blue-400 shrink-0 mt-0.5"></i>
+                        <span>You can add stage directions inside parenthetical tags e.g. <i>(whispering excitedly)</i> directly into lines.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Script Editor & Audio Output (8 cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-6">
+
+            <!-- Script Editor Box -->
+            <div class="bg-slate-950/50 border border-slate-800 rounded-2xl p-5 shadow-xl flex-1 flex flex-col min-h-[480px]">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-5 h-5 text-emerald-400"></i>
+                        <h2 class="font-semibold text-slate-200">Dialogue Script</h2>
+                    </div>
+
+                    <!-- Editor Mode Toggles -->
+                    <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
+                        <button id="modeVisualBtn" onclick="switchMode('visual')" class="text-xs font-medium px-3 py-1 rounded-lg transition text-white bg-slate-800 shadow">
+                            Structured Editor
+                        </button>
+                        <button id="modeTextBtn" onclick="switchMode('text')" class="text-xs font-medium px-3 py-1 rounded-lg transition text-slate-400 hover:text-slate-200">
+                            Raw Text
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mode 1: Visual Block Line Builder -->
+                <div id="visualEditor" class="flex-1 flex flex-col gap-3 overflow-y-auto max-h-[450px] pr-2 mb-4">
+                    <div id="dialogueLinesContainer" class="flex flex-col gap-3">
+                        <!-- Dynamic Dialogue Line Blocks -->
+                    </div>
+                    <button onclick="addDialogueLine()" class="w-full py-2.5 border-2 border-dashed border-slate-800 hover:border-slate-700 hover:bg-slate-900/40 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Dialogue Line
+                    </button>
+                </div>
+
+                <!-- Mode 2: Plain Text Area Editor -->
+                <div id="textEditor" class="flex-1 hidden flex flex-col mb-4">
+                    <textarea id="rawScriptTextarea" class="w-full flex-1 min-h-[320px] bg-slate-900/80 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 leading-relaxed focus:outline-none focus:border-blue-500 resize-none" placeholder="Format example:
+Alex: (excitedly) Welcome to the podcast!
+Jordan: Thanks Alex! Great to be here today."></textarea>
+                    <div class="mt-2 text-[11px] text-slate-500 flex justify-between">
+                        <span>Format: <code>SpeakerName: (direction) Text content...</code></span>
+                        <button onclick="syncRawToVisual()" class="text-blue-400 hover:underline">Parse into Visual Editor</button>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-4">
+                    <div class="text-xs text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-500"></i>
+                        <span id="lineCountLabel">0 lines</span>
+                    </div>
+
+                    <button id="generateBtn" onclick="generateDialogueAudio()" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-blue-600/25 flex items-center gap-2 transition transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="wand-2" class="w-4 h-4"></i>
+                        <span id="generateBtnText">Generate Dialogue Audio</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Audio Output & Player Card -->
+            <div id="audioOutputCard" class="bg-slate-950/50 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4 relative overflow-hidden transition-all duration-300 opacity-60">
+                
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="music" class="w-5 h-5 text-amber-400"></i>
+                        <h2 class="font-semibold text-slate-200">Audio Result</h2>
+                    </div>
+                    <div id="audioStatusBadge" class="text-xs bg-slate-800 text-slate-400 border border-slate-700/60 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-slate-500"></span> Ready
+                    </div>
+                </div>
+
+                <!-- Player Controls -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                    <audio id="mainAudioPlayer" class="hidden"></audio>
+
+                    <!-- Waveform simulation canvas -->
+                    <div class="h-14 w-full bg-slate-950/80 rounded-lg border border-slate-800/80 flex items-center justify-center p-2 relative overflow-hidden">
+                        <canvas id="waveformCanvas" class="w-full h-full"></canvas>
+                        <div id="waveformPlaceholder" class="absolute inset-0 flex items-center justify-center text-xs text-slate-600 gap-2">
+                            <i data-lucide="audio-lines" class="w-4 h-4"></i> Audio visualizer will render here upon generation
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <button id="playAudioBtn" onclick="togglePlayAudio()" disabled class="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white disabled:text-slate-600 rounded-full shadow transition disabled:shadow-none">
+                                <i id="playIcon" data-lucide="play" class="w-5 h-5 fill-current"></i>
+                            </button>
+
+                            <div>
+                                <div id="audioTimeDisplay" class="text-xs font-mono text-slate-300">00:00 / 00:00</div>
+                                <div class="text-[10px] text-slate-500">24kHz PCM High Quality Audio</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <a id="downloadAudioLink" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg border border-slate-700/80 flex items-center gap-1.5 opacity-50 pointer-events-none transition" download="dialogue-audio.wav">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i> Download WAV
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Application Script -->
+    <script>
+        // Preset Voice Profiles available in Gemini TTS
+        const VOICE_PROFILES = [
+            { name: 'Kore', gender: 'Female / Neutral', characteristic: 'Firm & Professional', icon: 'user' },
+            { name: 'Zephyr', gender: 'Female / Warm', characteristic: 'Bright & Conversational', icon: 'sparkles' },
+            { name: 'Puck', gender: 'Male / Energetic', characteristic: 'Upbeat & Lively', icon: 'zap' },
+            { name: 'Charon', gender: 'Male / Deep', characteristic: 'Informative & Calm', icon: 'shield' },
+            { name: 'Fenrir', gender: 'Male / Dynamic', characteristic: 'Excitable & Expressive', icon: 'flame' },
+            { name: 'Leda', gender: 'Female / Youthful', characteristic: 'Youthful & Friendly', icon: 'smile' },
+            { name: 'Aoede', gender: 'Female / Gentle', characteristic: 'Breezy & Soft', icon: 'wind' },
+            { name: 'Orus', gender: 'Male / Firm', characteristic: 'Authoritative & Clear', icon: 'user-check' },
+            { name: 'Callirrhoe', gender: 'Female / Casual', characteristic: 'Easy-going & Natural', icon: 'coffee' },
+            { name: 'Enceladus', gender: 'Male / Soft', characteristic: 'Breathy & Intimate', icon: 'moon' },
+            { name: 'Gacrux', gender: 'Male / Mature', characteristic: 'Mature & Wise', icon: 'book-open' },
+            { name: 'Sulafat', gender: 'Female / Warm', characteristic: 'Warm & Welcoming', icon: 'heart' },
+        ];
+
+        // State Management
+        let speakers = [
+            { id: 'spk_1', name: 'Alex', genderStyle: 'Female', voiceName: 'Zephyr', color: 'border-blue-500/50 bg-blue-500/10 text-blue-400' },
+            { id: 'spk_2', name: 'Jordan', genderStyle: 'Male', voiceName: 'Puck', color: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400' }
+        ];
+
+        let dialogueLines = [
+            { id: 'line_1', speakerId: 'spk_1', direction: 'excitedly', text: 'Hey Jordan! Have you tested the new multi-speaker audio generator yet?' },
+            { id: 'line_2', speakerId: 'spk_2', direction: 'impressed', text: 'I just did! It creates realistic conversations with different voices effortlessly.' },
+            { id: 'line_3', speakerId: 'spk_1', direction: 'curious', text: 'Can we change accents and emotions for each character?' },
+            { id: 'line_4', speakerId: 'spk_2', direction: 'reassuringly', text: 'Absolutely! Just add natural language stage directions in parentheses.' }
+        ];
+
+        let activeEditorMode = 'visual'; // 'visual' | 'text'
+        let currentAudioBlob = null;
+        let currentAudioUrl = null;
+        let animationFrameId = null;
+
+        // Colors for dynamically adding speakers
+        const COLOR_ACCENTS = [
+            'border-blue-500/50 bg-blue-500/10 text-blue-400',
+            'border-emerald-500/50 bg-emerald-500/10 text-emerald-400',
+            'border-purple-500/50 bg-purple-500/10 text-purple-400',
+            'border-amber-500/50 bg-amber-500/10 text-amber-400',
+            'border-pink-500/50 bg-pink-500/10 text-pink-400',
+            'border-cyan-500/50 bg-cyan-500/10 text-cyan-400'
+        ];
+
+        // Initialize UI on DOM Ready
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderSpeakers();
+            renderDialogueLines();
+            setupAudioPlayer();
+        });
+
+        // ---------------------------------------------------------------------
+        // SPEAKER MANAGEMENT
+        // ---------------------------------------------------------------------
+        function renderSpeakers() {
+            const container = document.getElementById('speakersContainer');
+            container.innerHTML = '';
+
+            speakers.forEach((speaker, index) => {
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-xl border bg-slate-900/80 flex flex-col gap-2.5 transition relative group`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 flex-1">
+                            <span class="w-3 h-3 rounded-full ${speaker.color.split(' ')[1]} border ${speaker.color.split(' ')[0]}"></span>
+                            <input type="text" value="${escapeHtml(speaker.name)}" 
+                                onchange="updateSpeakerName('${speaker.id}', this.value)" 
+                                class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-blue-500 text-xs font-bold text-slate-100 focus:outline-none px-1 py-0.5 w-28"
+                                placeholder="Speaker Name" />
+                        </div>
+                        
+                        ${speakers.length > 1 ? `
+                            <button onclick="removeSpeaker('${speaker.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition opacity-80 group-hover:opacity-100" title="Remove Speaker">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-0.5">Voice Gender/Style</label>
+                            <select onchange="updateSpeakerGender('${speaker.id}', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 text-xs focus:outline-none focus:border-blue-500">
+                                <option value="Female" ${speaker.genderStyle === 'Female' ? 'selected' : ''}>Female</option>
+                                <option value="Male" ${speaker.genderStyle === 'Male' ? 'selected' : ''}>Male</option>
+                                <option value="Neutral" ${speaker.genderStyle === 'Neutral' ? 'selected' : ''}>Neutral</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-0.5">Voice Profile</label>
+                            <select onchange="updateSpeakerVoice('${speaker.id}', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 text-xs focus:outline-none focus:border-blue-500">
+                                ${VOICE_PROFILES.map(v => `
+                                    <option value="${v.name}" ${speaker.voiceName === v.name ? 'selected' : ''}>
+                                        ${v.name} (${v.characteristic})
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+            updateSpeakerDropdownsInLines();
+        }
+
+        function addSpeaker() {
+            if (speakers.length >= 6) {
+                showToast('Maximum 6 speakers allowed per dialogue', 'info');
+                return;
+            }
+
+            const id = 'spk_' + Date.now();
+            const color = COLOR_ACCENTS[speakers.length % COLOR_ACCENTS.length];
+            const defaultVoices = ['Zephyr', 'Puck', 'Kore', 'Fenrir', 'Leda', 'Orus'];
+            const defaultVoice = defaultVoices[speakers.length % defaultVoices.length];
+
+            speakers.push({
+                id: id,
+                name: `Speaker ${speakers.length + 1}`,
+                genderStyle: speakers.length % 2 === 0 ? 'Female' : 'Male',
+                voiceName: defaultVoice,
+                color: color
+            });
+
+            renderSpeakers();
+        }
+
+        function removeSpeaker(id) {
+            if (speakers.length <= 1) return;
+            speakers = speakers.filter(s => s.id !== id);
+            
+            // Reassign any lines assigned to deleted speaker to the first available speaker
+            const fallbackSpeakerId = speakers[0].id;
+            dialogueLines.forEach(line => {
+                if (line.speakerId === id) line.speakerId = fallbackSpeakerId;
+            });
+
+            renderSpeakers();
+            renderDialogueLines();
+        }
+
+        function updateSpeakerName(id, name) {
+            const speaker = speakers.find(s => s.id === id);
+            if (speaker) {
+                speaker.name = name.trim() || 'Speaker';
+                renderDialogueLines();
+            }
+        }
+
+        function updateSpeakerGender(id, gender) {
+            const speaker = speakers.find(s => s.id === id);
+            if (speaker) speaker.genderStyle = gender;
+        }
+
+        function updateSpeakerVoice(id, voiceName) {
+            const speaker = speakers.find(s => s.id === id);
+            if (speaker) speaker.voiceName = voiceName;
+        }
+
+        // ---------------------------------------------------------------------
+        // SCRIPT EDITOR & LINES MANAGEMENT
+        // ---------------------------------------------------------------------
+        function renderDialogueLines() {
+            const container = document.getElementById('dialogueLinesContainer');
+            container.innerHTML = '';
+
+            dialogueLines.forEach((line, index) => {
+                const currentSpeaker = speakers.find(s => s.id === line.speakerId) || speakers[0];
+                
+                const lineCard = document.createElement('div');
+                lineCard.className = `p-3 bg-slate-900/90 rounded-xl border border-slate-800/80 flex flex-col gap-2 transition hover:border-slate-700`;
+                
+                lineCard.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-mono text-slate-500 w-4">${index + 1}.</span>
+                            
+                            <!-- Speaker Selector -->
+                            <select onchange="updateLineSpeaker('${line.id}', this.value)" class="bg-slate-950 text-slate-200 border border-slate-800 rounded-lg px-2 py-1 text-xs font-medium focus:outline-none focus:border-blue-500">
+                                ${speakers.map(s => `
+                                    <option value="${s.id}" ${s.id === line.speakerId ? 'selected' : ''}>
+                                        ${escapeHtml(s.name)}
+                                    </option>
+                                `).join('')}
+                            </select>
+
+                            <!-- Tone / Direction Input -->
+                            <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5">
+                                <span class="text-[10px] text-slate-500 font-mono">(</span>
+                                <input type="text" value="${escapeHtml(line.direction || '')}" 
+                                    onchange="updateLineDirection('${line.id}', this.value)" 
+                                    placeholder="tone, e.g. whisper" 
+                                    class="bg-transparent text-[11px] text-amber-400 italic placeholder-slate-600 focus:outline-none w-24" />
+                                <span class="text-[10px] text-slate-500 font-mono">)</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            <button onclick="moveLine('${line.id}', -1)" ${index === 0 ? 'disabled class="opacity-30"' : 'class="hover:text-slate-200 text-slate-500"'} title="Move Up">
+                                <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="moveLine('${line.id}', 1)" ${index === dialogueLines.length - 1 ? 'disabled class="opacity-30"' : 'class="hover:text-slate-200 text-slate-500"'} title="Move Down">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="removeDialogueLine('${line.id}')" class="text-slate-500 hover:text-rose-400 p-1 ml-1" title="Delete line">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Line Text Area -->
+                    <textarea onchange="updateLineText('${line.id}', this.value)" 
+                        oninput="updateLineText('${line.id}', this.value)"
+                        rows="2"
+                        class="w-full bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-none"
+                        placeholder="Type spoken dialogue text here...">${escapeHtml(line.text)}</textarea>
+                `;
+                container.appendChild(lineCard);
+            });
+
+            document.getElementById('lineCountLabel').textContent = `${dialogueLines.length} line${dialogueLines.length === 1 ? '' : 's'}`;
+            lucide.createIcons();
+        }
+
+        function addDialogueLine() {
+            // Pick next speaker in loop for alternate turn-taking
+            const lastLine = dialogueLines[dialogueLines.length - 1];
+            let nextSpeakerId = speakers[0].id;
+            if (lastLine && speakers.length > 1) {
+                const currentIndex = speakers.findIndex(s => s.id === lastLine.speakerId);
+                const nextIndex = (currentIndex + 1) % speakers.length;
+                nextSpeakerId = speakers[nextIndex].id;
+            }
+
+            dialogueLines.push({
+                id: 'line_' + Date.now(),
+                speakerId: nextSpeakerId,
+                direction: '',
+                text: ''
+            });
+
+            renderDialogueLines();
+        }
+
+        function removeDialogueLine(id) {
+            if (dialogueLines.length <= 1) {
+                showToast('Dialogue must have at least one line', 'info');
+                return;
+            }
+            dialogueLines = dialogueLines.filter(l => l.id !== id);
+            renderDialogueLines();
+        }
+
+        function moveLine(id, direction) {
+            const idx = dialogueLines.findIndex(l => l.id === id);
+            if (idx < 0) return;
+            const targetIdx = idx + direction;
+            if (targetIdx < 0 || targetIdx >= dialogueLines.length) return;
+
+            const temp = dialogueLines[idx];
+            dialogueLines[idx] = dialogueLines[targetIdx];
+            dialogueLines[targetIdx] = temp;
+
+            renderDialogueLines();
+        }
+
+        function updateLineSpeaker(lineId, speakerId) {
+            const line = dialogueLines.find(l => l.id === lineId);
+            if (line) line.speakerId = speakerId;
+        }
+
+        function updateLineDirection(lineId, direction) {
+            const line = dialogueLines.find(l => l.id === lineId);
+            if (line) line.direction = direction;
+        }
+
+        function updateLineText(lineId, text) {
+            const line = dialogueLines.find(l => l.id === lineId);
+            if (line) line.text = text;
+        }
+
+        function updateSpeakerDropdownsInLines() {
+            renderDialogueLines();
+        }
+
+        // ---------------------------------------------------------------------
+        // EDITOR MODE SWITCHING (Visual vs Raw Text)
+        // ---------------------------------------------------------------------
+        function switchMode(mode) {
+            activeEditorMode = mode;
+            const visualEditor = document.getElementById('visualEditor');
+            const textEditor = document.getElementById('textEditor');
+            const visualBtn = document.getElementById('modeVisualBtn');
+            const textBtn = document.getElementById('modeTextBtn');
+
+            if (mode === 'text') {
+                syncVisualToRaw();
+                visualEditor.classList.add('hidden');
+                textEditor.classList.remove('hidden');
+                
+                textBtn.className = 'text-xs font-medium px-3 py-1 rounded-lg transition text-white bg-slate-800 shadow';
+                visualBtn.className = 'text-xs font-medium px-3 py-1 rounded-lg transition text-slate-400 hover:text-slate-200';
+            } else {
+                syncRawToVisual();
+                textEditor.classList.add('hidden');
+                visualEditor.classList.remove('hidden');
+
+                visualBtn.className = 'text-xs font-medium px-3 py-1 rounded-lg transition text-white bg-slate-800 shadow';
+                textBtn.className = 'text-xs font-medium px-3 py-1 rounded-lg transition text-slate-400 hover:text-slate-200';
+            }
+        }
+
+        function syncVisualToRaw() {
+            const rawText = dialogueLines.map(line => {
+                const speaker = speakers.find(s => s.id === line.speakerId) || speakers[0];
+                const dirStr = line.direction ? `(${line.direction.trim()}) ` : '';
+                return `${speaker.name}: ${dirStr}${line.text}`;
+            }).join('\n');
+
+            document.getElementById('rawScriptTextarea').value = rawText;
+        }
+
+        function syncRawToVisual() {
+            const rawText = document.getElementById('rawScriptTextarea').value.trim();
+            if (!rawText) return;
+
+            const lines = rawText.split('\n').filter(l => l.trim().length > 0);
+            const newDialogueLines = [];
+
+            lines.forEach((lineStr, index) => {
+                const match = lineStr.match(/^([^:]+):\s*(.*)$/);
+                if (match) {
+                    const speakerName = match[1].trim();
+                    let content = match[2].trim();
+
+                    // Find or auto-create speaker
+                    let speaker = speakers.find(s => s.name.toLowerCase() === speakerName.toLowerCase());
+                    if (!speaker) {
+                        const newSpkId = 'spk_' + Date.now() + '_' + index;
+                        speaker = {
+                            id: newSpkId,
+                            name: speakerName,
+                            genderStyle: 'Female',
+                            voiceName: 'Zephyr',
+                            color: COLOR_ACCENTS[speakers.length % COLOR_ACCENTS.length]
+                        };
+                        speakers.push(speaker);
+                    }
+
+                    // Extract direction tag if present e.g. (whispering)
+                    let direction = '';
+                    const dirMatch = content.match(/^\(([^)]+)\)\s*(.*)$/);
+                    if (dirMatch) {
+                        direction = dirMatch[1].trim();
+                        content = dirMatch[2].trim();
+                    }
+
+                    newDialogueLines.push({
+                        id: 'line_' + Date.now() + '_' + index,
+                        speakerId: speaker.id,
+                        direction: direction,
+                        text: content
+                    });
+                }
+            });
+
+            if (newDialogueLines.length > 0) {
+                dialogueLines = newDialogueLines;
+                renderSpeakers();
+                renderDialogueLines();
+                showToast('Raw script parsed into dialogue blocks!', 'success');
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // SAMPLE PRESET SCRIPTS
+        // ---------------------------------------------------------------------
+        function loadPresetScript() {
+            speakers = [
+                { id: 'spk_1', name: 'Dr. Evelyn', genderStyle: 'Female', voiceName: 'Kore', color: 'border-blue-500/50 bg-blue-500/10 text-blue-400' },
+                { id: 'spk_2', name: 'Leo', genderStyle: 'Male', voiceName: 'Puck', color: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400' }
+            ];
+
+            dialogueLines = [
+                { id: 'line_1', speakerId: 'spk_1', direction: 'urgently in a hushed voice', text: 'Leo, lock the laboratory door. We only have three minutes before the power fails.' },
+                { id: 'line_2', speakerId: 'spk_2', direction: 'breathless and startled', text: 'I just locked it! Did the quantum containment field breach?' },
+                { id: 'line_3', speakerId: 'spk_1', direction: 'calm but firm', text: 'Not yet. But if we initialize the bypass right now, we can prevent a total collapse.' },
+                { id: 'line_4', speakerId: 'spk_2', direction: 'determined', text: 'Initiating bypass sequence on three... two... one!' }
+            ];
+
+            renderSpeakers();
+            renderDialogueLines();
+            if (activeEditorMode === 'text') syncVisualToRaw();
+            showToast('Loaded Sci-Fi Thriller script preset', 'info');
+        }
+
+        // ---------------------------------------------------------------------
+        // GEMINI TTS MULTI-SPEAKER API GENERATION
+        // ---------------------------------------------------------------------
+        async function generateDialogueAudio() {
+            if (activeEditorMode === 'text') syncRawToVisual();
+
+            if (dialogueLines.length === 0 || dialogueLines.every(l => !l.text.trim())) {
+                showToast('Please add at least one line of dialogue text', 'error');
+                return;
+            }
+
+            const genBtn = document.getElementById('generateBtn');
+            const genBtnText = document.getElementById('generateBtnText');
+            const statusBadge = document.getElementById('audioStatusBadge');
+            const audioCard = document.getElementById('audioOutputCard');
+
+            // Set Loading UI
+            genBtn.disabled = true;
+            genBtnText.textContent = 'Generating Audio...';
+            statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Processing API Request...`;
+            audioCard.classList.remove('opacity-60');
+
+            try {
+                // 1. Construct prompt text for Multi-Speaker TTS
+                const atmosphere = document.getElementById('globalAtmosphere').value;
+                
+                let conversationScript = `Overall Mood/Atmosphere: ${atmosphere}.\n`;
+                conversationScript += `TTS the following conversation between ${speakers.map(s => s.name).join(' and ')}:\n\n`;
+
+                dialogueLines.forEach(line => {
+                    const spk = speakers.find(s => s.id === line.speakerId) || speakers[0];
+                    const dir = line.direction ? `(${line.direction.trim()}) ` : '';
+                    conversationScript += `${spk.name}: ${dir}${line.text.trim()}\n`;
+                });
+
+                // 2. Build multiSpeakerVoiceConfig array
+                const speakerVoiceConfigs = speakers.map(spk => ({
+                    speaker: spk.name,
+                    voiceConfig: {
+                        prebuiltVoiceConfig: {
+                            voiceName: spk.voiceName
+                        }
+                    }
+                }));
+
+                const payload = {
+                    contents: [{
+                        parts: [{ text: conversationScript }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            multiSpeakerVoiceConfig: {
+                                speakerVoiceConfigs: speakerVoiceConfigs
+                            }
+                        }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                const apiKey = ""; // API key populated by runtime platform
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+                // Exponential backoff fetch helper
+                const response = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+
+                if (part && part.inlineData && part.inlineData.data) {
+                    const mimeType = part.inlineData.mimeType || "audio/L16;rate=24000";
+                    
+                    // Parse sample rate from mimeType e.g. rate=24000
+                    let sampleRate = 24000;
+                    const rateMatch = mimeType.match(/rate=(\d+)/);
+                    if (rateMatch && rateMatch[1]) {
+                        sampleRate = parseInt(rateMatch[1], 10);
+                    }
+
+                    // Convert base64 PCM16 data into playable WAV Blob
+                    const base64Data = part.inlineData.data;
+                    const pcmBuffer = base64ToArrayBuffer(base64Data);
+                    const pcm16 = new Int16Array(pcmBuffer);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+
+                    // Update Player
+                    loadAudioBlob(wavBlob);
+
+                    statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Audio Ready`;
+                    showToast('Dialogue audio generated successfully!', 'success');
+                } else {
+                    throw new Error('Invalid response structure or audio data missing from Gemini API');
+                }
+
+            } catch (err) {
+                console.error("TTS Generation error:", err);
+                statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Error`;
+                showToast(`Failed to generate audio: ${err.message || 'API Request Error'}`, 'error');
+            } finally {
+                genBtn.disabled = false;
+                genBtnText.textContent = 'Generate Dialogue Audio';
+            }
+        }
+
+        // Exponential backoff fetch function
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            let delay = 1000;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (res.ok) return res;
+                    if (res.status === 429 || res.status >= 500) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                        continue;
+                    }
+                    const errorJson = await res.json().catch(() => ({}));
+                    throw new Error(errorJson.error?.message || `HTTP ${res.status}`);
+                } catch (e) {
+                    if (i === maxRetries - 1) throw e;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // AUDIO PROCESSING UTILITIES (PCM16 to WAV)
+        // ---------------------------------------------------------------------
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcm16Array, sampleRate = 24000, numChannels = 1) {
+            const buffer = new ArrayBuffer(44 + pcm16Array.length * 2);
+            const view = new DataView(buffer);
+
+            /* RIFF identifier */
+            writeString(view, 0, 'RIFF');
+            /* RIFF chunk length */
+            view.setUint32(4, 36 + pcm16Array.length * 2, true);
+            /* RIFF type */
+            writeString(view, 8, 'WAVE');
+            /* format chunk identifier */
+            writeString(view, 12, 'fmt ');
+            /* format chunk length */
+            view.setUint32(16, 16, true);
+            /* sample format (raw PCM = 1) */
+            view.setUint16(20, 1, true);
+            /* channel count */
+            view.setUint16(22, numChannels, true);
+            /* sample rate */
+            view.setUint32(24, sampleRate, true);
+            /* byte rate (sampleRate * numChannels * 2 bytes/sample) */
+            view.setUint32(28, sampleRate * numChannels * 2, true);
+            /* block align */
+            view.setUint16(32, numChannels * 2, true);
+            /* bits per sample */
+            view.setUint16(34, 16, true);
+            /* data chunk identifier */
+            writeString(view, 36, 'data');
+            /* data chunk length */
+            view.setUint32(40, pcm16Array.length * 2, true);
+
+            // Write PCM samples
+            let offset = 44;
+            for (let i = 0; i < pcm16Array.length; i++, offset += 2) {
+                view.setInt16(offset, pcm16Array[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // AUDIO PLAYER & VISUALIZER
+        // ---------------------------------------------------------------------
+        function setupAudioPlayer() {
+            const player = document.getElementById('mainAudioPlayer');
+
+            player.addEventListener('timeupdate', () => {
+                const current = formatTime(player.currentTime);
+                const total = formatTime(player.duration || 0);
+                document.getElementById('audioTimeDisplay').textContent = `${current} / ${total}`;
+                drawWaveform();
+            });
+
+            player.addEventListener('ended', () => {
+                document.getElementById('playIcon').setAttribute('data-lucide', 'play');
+                lucide.createIcons();
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                drawWaveform();
+            });
+        }
+
+        function loadAudioBlob(blob) {
+            currentAudioBlob = blob;
+            if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+            currentAudioUrl = URL.createObjectURL(blob);
+
+            const player = document.getElementById('mainAudioPlayer');
+            player.src = currentAudioUrl;
+
+            // Enable play & download buttons
+            document.getElementById('playAudioBtn').disabled = false;
+            
+            const downloadLink = document.getElementById('downloadAudioLink');
+            downloadLink.href = currentAudioUrl;
+            downloadLink.classList.remove('opacity-50', 'pointer-events-none');
+
+            document.getElementById('waveformPlaceholder').classList.add('hidden');
+            
+            player.onloadedmetadata = () => {
+                document.getElementById('audioTimeDisplay').textContent = `00:00 / ${formatTime(player.duration)}`;
+                drawWaveform();
+            };
+        }
+
+        function togglePlayAudio() {
+            const player = document.getElementById('mainAudioPlayer');
+            const playIcon = document.getElementById('playIcon');
+
+            if (!player.src) return;
+
+            if (player.paused) {
+                player.play();
+                playIcon.setAttribute('data-lucide', 'pause');
+                startWaveformAnimation();
+            } else {
+                player.pause();
+                playIcon.setAttribute('data-lucide', 'play');
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            }
+            lucide.createIcons();
+        }
+
+        function drawWaveform() {
+            const canvas = document.getElementById('waveformCanvas');
+            const ctx = canvas.getContext('2d');
+            const player = document.getElementById('mainAudioPlayer');
+
+            // Responsive resolution
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const bars = 60;
+            const barWidth = canvas.width / bars;
+            const progress = player.duration ? (player.currentTime / player.duration) : 0;
+
+            for (let i = 0; i < bars; i++) {
+                // Simulated random amplitude profile
+                const seed = Math.sin(i * 0.25) * 0.4 + 0.5;
+                const barHeight = Math.max(4, seed * canvas.height * 0.75);
+                const x = i * barWidth;
+                const y = (canvas.height - barHeight) / 2;
+
+                const isPlayed = (i / bars) <= progress;
+
+                ctx.fillStyle = isPlayed ? '#3b82f6' : '#334155';
+                ctx.beginPath();
+                ctx.roundRect(x + 1, y, barWidth - 2, barHeight, 2);
+                ctx.fill();
+            }
+        }
+
+        function startWaveformAnimation() {
+            drawWaveform();
+            const player = document.getElementById('mainAudioPlayer');
+            if (!player.paused) {
+                animationFrameId = requestAnimationFrame(startWaveformAnimation);
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // HELPERS & UTILITIES
+        // ---------------------------------------------------------------------
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const bgColors = {
+                success: 'bg-emerald-950/90 border-emerald-800 text-emerald-200',
+                error: 'bg-rose-950/90 border-rose-800 text-rose-200',
+                info: 'bg-slate-900/90 border-slate-700 text-slate-200'
+            };
+
+            const icons = {
+                success: '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>',
+                error: '<i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>',
+                info: '<i data-lucide="info" class="w-4 h-4 text-blue-400"></i>'
+            };
+
+            toast.className = `px-4 py-3 rounded-xl border shadow-xl text-xs flex items-center gap-2.5 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${bgColors[type] || bgColors.info}`;
+            toast.innerHTML = `${icons[type] || icons.info} <span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
